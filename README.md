@@ -25,7 +25,7 @@ pip install discord.py yt-dlp asyncio dotenv
 ### 3. Клонирование репозитория
 ```sh
 git clone https://github.com/Progress-ux/DiscordBot.git
-cd PyDiscordBot
+cd DiscordBot
 ```
 
 ### 4. Запуск бота
