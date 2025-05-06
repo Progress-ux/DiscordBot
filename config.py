@@ -6,10 +6,21 @@ load_dotenv()
 YDL_OPTIONS = {
     'format': 'bestaudio/best',
     'extract_flat': True,
-    'quiet': False,
+    'quiet': True,
     'ignoreerrors': True, 
     'nocheckcertificate': True,
     'cachedir': False
+}
+
+YDL_OPTIONS_FROM_TITLE = {
+    'format': 'bestaudio/best',
+    'extract_flat': True,
+    'quiet': True,
+    'ignoreerrors': True, 
+    'nocheckcertificate': True,
+    'cachedir': False,
+    'noplaylist': True, 
+    'default_search': 'ytsearch'
 }
 
 FFMPEG_OPTIONS = {

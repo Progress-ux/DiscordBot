@@ -8,12 +8,15 @@ import asyncio
 @commands.command()
 async def skip(ctx):
     """Пропускает текущий трек и воспроизводит следующий"""
-
     if ctx.voice_client and ctx.voice_client.is_playing():
+        if not ctx.bot.state.track_queue:
+            await ctx.send("❌ В очереди нет треков для пропуска.")
+            return
+
         if ctx.bot.state.isRepeat:
             await repeat(ctx)
         ctx.voice_client.stop()
-        ctx.state.should_play_next = False  
+        ctx.bot.state.should_play_next = False  
         await ctx.send("⏭ Пропущен текущий трек.")
         await play_next(ctx)
     else:
@@ -23,6 +26,9 @@ async def skip(ctx):
 @commands.command()
 async def back(ctx):
     """Возвращает на предыдущий трек"""
+    if not ctx.bot.state.track_history:
+        await ctx.send("В истории нет треков")
+        return
 
     title, url = ctx.bot.state.backTrack()
     if not title or not url:

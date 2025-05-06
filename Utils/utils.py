@@ -1,11 +1,12 @@
 import yt_dlp
 import asyncio
 import re
-from config import YDL_OPTIONS
+from config import YDL_OPTIONS, YDL_OPTIONS_FROM_TITLE
 import concurrent.futures
 
 executor = concurrent.futures.ThreadPoolExecutor()
 
+# Позволяет правильно обрабатывать ссылки на радио
 def clean_url(url):
     if 'playlist' not in url and 'list=' in url:
         cleaned_url = re.sub(r"(\?list=[^&]+)", "", url)
@@ -13,25 +14,34 @@ def clean_url(url):
     else:
         return url
 
-def extract_info(url):
-    with yt_dlp.YoutubeDL({
-        'format': 'bestaudio/best',
-        'extract_flat': True,
-        'quiet': True,
-        'ignoreerrors': True
-    }) as ydl:
-        return ydl.extract_info(url, download=False, process=False)
+# Проверка на ссылку 
+def is_url(string):
+    return re.match(r'^https?://', string) is not None
 
-def download_audio(url):
-    with yt_dlp.YoutubeDL({
-        'format': 'bestaudio/best',
-        'extract_flat': True,
-        'quiet': True,
-        'ignoreerrors': True
-    }) as ydl:
-        info = ydl.extract_info(url, download=False)
-        return info['url']  
+
+# Нужен для обработки плейлистов
+async def extract_info(url):
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(YDL_OPTIONS).extract_info(url, download=False, process=False))
     
+async def extract_info_search(query):
+    loop = asyncio.get_running_loop()
+    def search():
+        with yt_dlp.YoutubeDL(YDL_OPTIONS_FROM_TITLE) as ydl:
+            info = ydl.extract_info(f"ytsearch:{query}", download=False)
+            return info['entries'][0] 
+    return await loop.run_in_executor(executor, search)
+
+# Получает ссылку на аудио 
+async def download_audio(url):
+    loop = asyncio.get_running_loop()
+    def get_audio():
+        with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
+            info = ydl.extract_info(url, download=False)
+            return info['url']  
+    return await loop.run_in_executor(executor, get_audio)
+
+# Загрузка аудио-ссылок в отдельном потоке
 async def load_rest(info, ctx):
 
     loop = asyncio.get_running_loop()

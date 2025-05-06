@@ -1,41 +1,47 @@
 import discord
 import asyncio
 from discord.ext import commands
+
 from config import DISCORD_TOKEN
+from player_state import PlayerState
+
+# Импорт команд
 from commands.music import play
 from commands.playback import skip, back, repeat, pause, resume, stop, clear
 from commands.playlist import playlist, history
-from commands.voice_controls import join,leave
-from player_state import PlayerState
+from commands.voice_controls import join, leave
+from commands.help import help_command
 
+# Настройка интентов
 intents = discord.Intents.default()
 intents.message_content = True
 
-player_state = PlayerState()
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-bot.state = player_state
+# Инициализация бота
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot.state = PlayerState()
 
 @bot.event
 async def on_ready():
     print(f'✅ Бот запущен как {bot.user}')
 
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member == bot.user:
+        if before.channel and not after.channel:
+            bot.state.clear()
+        elif not before.channel and after.channel:
+            bot.state.clear()
+
+
 # Регистрация команд
-bot.add_command(play)
+command_list = [
+    play, skip, back, repeat, pause, resume, 
+    stop, clear, playlist, history, join, 
+    leave, help_command
+]
 
-bot.add_command(skip)
-bot.add_command(back)
-bot.add_command(repeat)
-bot.add_command(pause)
-bot.add_command(resume)
-bot.add_command(stop)
-bot.add_command(clear)
-
-bot.add_command(playlist)
-bot.add_command(history)
-
-bot.add_command(join)
-bot.add_command(leave)
+for cmd in command_list:
+    bot.add_command(cmd)
 
 async def run_bot():
     await bot.start(DISCORD_TOKEN)
