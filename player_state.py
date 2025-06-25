@@ -1,4 +1,5 @@
-# player_state.py
+# Описание плеера и его поведения 
+
 from collections import deque
 
 class PlayerState:
@@ -29,7 +30,7 @@ class PlayerState:
         return list(self.track_history)
     
     def backTrack(self):
-        if len(self.track_history) > 1:
+        if len(self.track_history) >= 1:
             self.track_queue.appendleft(self.current_track)
             self.track_history.pop()
             self.current_track = self.track_history[-1]

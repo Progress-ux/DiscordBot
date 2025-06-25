@@ -13,6 +13,7 @@ async def play(ctx, *, query: str):
         await ctx.invoke(join)
 
     try:
+        # Обработка ссылки
         if is_url(query):
             cleanurl = clean_url(query)
             info = await extract_info(cleanurl)
@@ -20,6 +21,7 @@ async def play(ctx, *, query: str):
             info = await extract_info_search(query)
             cleanurl = info['url']
 
+        # Проверка на плейлист для более удобной загрузки в очередь
         if 'entries' in info:
             for entry in info['entries']:
                 track_title = entry.get('title', 'Неизвестный трек')
@@ -33,6 +35,7 @@ async def play(ctx, *, query: str):
                 await play_next(ctx)
             asyncio.create_task(load_rest(info, ctx))
 
+        # Загрузка одиночного трека в очередь
         else:
             track_title = info.get('title', 'Неизвестный трек')
             track_audio_url = await download_audio(cleanurl)
@@ -43,12 +46,16 @@ async def play(ctx, *, query: str):
     except Exception as e:
         await ctx.send(f"❌ Ошибка загрузки: {e}")
 
+# Функция для автоматического продолжения очереди
 async def play_next(ctx):
     """Проигрывает следующий трек в очереди"""
+
+    # Флаг для выключения треков
     if not ctx.bot.state.should_play_next or (not ctx.bot.state.track_queue and not ctx.bot.state.isRepeat):
         ctx.bot.state.should_play_next = True
         return
     
+    # Загрузка следующего трека из очереди
     title, url = ctx.bot.state.popNextTrack()
     if title is None and url is None:
         await ctx.send("❌ Очередь пуста.")

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Настройка для поиска по ссылке на видео
 YDL_OPTIONS = {
     'format': 'bestaudio/best',
     'extract_flat': True,
@@ -12,6 +13,7 @@ YDL_OPTIONS = {
     'cachedir': False
 }
 
+# Настройка для поиска по названию видео
 YDL_OPTIONS_FROM_TITLE = {
     'format': 'bestaudio/best',
     'extract_flat': True,
@@ -29,3 +31,6 @@ FFMPEG_OPTIONS = {
 }
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+
+# Промт для версии с AI(можно изменить под себя)
+BASE_PROMPT = 'Ты - умный помощник. Отвечай на русском, по делу и дружелюбно\n'

@@ -6,7 +6,7 @@ import concurrent.futures
 
 executor = concurrent.futures.ThreadPoolExecutor()
 
-# Позволяет правильно обрабатывать ссылки на радио
+# Позволяет правильно обрабатывать радиоссылки
 def clean_url(url):
     if 'playlist' not in url and 'list=' in url:
         cleaned_url = re.sub(r"(\?list=[^&]+)", "", url)
@@ -23,18 +23,23 @@ def is_url(string):
 async def extract_info(url):
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(YDL_OPTIONS).extract_info(url, download=False, process=False))
-    
+
+# Поиск видео по названию
 async def extract_info_search(query):
+    # Выделение потока
     loop = asyncio.get_running_loop()
+
     def search():
         with yt_dlp.YoutubeDL(YDL_OPTIONS_FROM_TITLE) as ydl:
             info = ydl.extract_info(f"ytsearch:{query}", download=False)
             return info['entries'][0] 
     return await loop.run_in_executor(executor, search)
 
-# Получает ссылку на аудио 
+# Получение ссылки на аудио 
 async def download_audio(url):
+    # Выделение потока
     loop = asyncio.get_running_loop()
+
     def get_audio():
         with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -43,14 +48,18 @@ async def download_audio(url):
 
 # Загрузка аудио-ссылок в отдельном потоке
 async def load_rest(info, ctx):
-
+    # Выделение потока
     loop = asyncio.get_running_loop()
+
+    # Переменная для подсчета загруженных треков из плейлиста
     i = 0
 
+    # Получение ссылки на каждый трек из плейлиста без скачивания
     def extract(entry_url):
         with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
             return ydl.extract_info(entry_url, download=False)
 
+    # Обработка каждой ссылки из плейлиста для загрузки аудиоссылок
     for entry in info['entries']:
         if entry is None or i == 0:
             i += 1

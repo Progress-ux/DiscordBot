@@ -1,3 +1,5 @@
+# Команды для работы с очередью
+
 from discord.ext import commands
 from commands.music import play_next
 from config import FFMPEG_OPTIONS
@@ -12,11 +14,15 @@ async def skip(ctx):
         if not ctx.bot.state.track_queue:
             await ctx.send("❌ В очереди нет треков для пропуска.")
             return
-
+        
+        # Отключаем автоповтор
         if ctx.bot.state.isRepeat:
             await repeat(ctx)
+
+        # Останавливаем плеер и не дает запустить следующий трек
         ctx.voice_client.stop()
         ctx.bot.state.should_play_next = False  
+
         await ctx.send("⏭ Пропущен текущий трек.")
         await play_next(ctx)
     else:
@@ -33,19 +39,23 @@ async def back(ctx):
     title, url = ctx.bot.state.backTrack()
     if not title or not url:
         await ctx.send("❌ Нет предыдущих треков!")
-    else:
-        try:
-            if ctx.voice_client and ctx.voice_client.is_playing():
-                if ctx.bot.state.isRepeat:
-                    await repeat(ctx)
-                ctx.voice_client.stop()
-                ctx.bot.state.should_play_next = False
+        return
+    
+    try:
+        if ctx.voice_client and ctx.voice_client.is_playing():
+            # Отключаем автоповтор
+            if ctx.bot.state.isRepeat:
+                await repeat(ctx)
 
-                await ctx.send(f"⏮ Возвращаюсь к предыдущему треку: {title}")
-                source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS)
-                ctx.voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next(ctx), ctx.bot.loop))
-        except Exception as e:
-            await ctx.send(f"❌ Ошибка загрузки: {e}")
+            # Останавливаем плеер и не дает запустить следующий трек
+            ctx.voice_client.stop()
+            ctx.bot.state.should_play_next = False
+
+            await ctx.send(f"⏮ Возвращаюсь к предыдущему треку: {title}")
+            source = discord.FFmpegPCMAudio(url, **FFMPEG_OPTIONS)
+            ctx.voice_client.play(source, after=lambda e: asyncio.run_coroutine_threadsafe(play_next(ctx), ctx.bot.loop))
+    except Exception as e:
+        await ctx.send(f"❌ Ошибка загрузки: {e}")
 
 
 @commands.command()
@@ -83,6 +93,7 @@ async def resume(ctx):
 async def stop(ctx):
     """Останавливает музыку"""
 
+    # Останавливает плеер и не дает запустить следующий трек
     if ctx.voice_client and ctx.voice_client.is_playing():
         ctx.voice_client.stop()
         ctx.bot.state.should_play_next = False
