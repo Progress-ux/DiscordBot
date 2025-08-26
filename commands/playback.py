@@ -11,10 +11,15 @@ import asyncio
 async def skip(ctx):
     """Пропускает текущий трек и воспроизводит следующий"""
     if ctx.voice_client and ctx.voice_client.is_playing():
-        if not ctx.bot.state.track_queue:
-            await ctx.send("❌ В очереди нет треков для пропуска.")
-            return
-        
+        try:
+            if not ctx.bot.state.track_queue and ctx.bot.state.isRepeatPlaylist:
+                ctx.bot.state.loopPlaylist()
+            elif not ctx.bot.state.track_queue:
+                await ctx.send("❌ В очереди нет треков для пропуска.")
+                return
+        except Exception as e:
+            print(f"❌ Ошибка: {e}")
+            
         # Отключаем автоповтор
         if ctx.bot.state.isRepeat:
             await repeat(ctx)
@@ -66,6 +71,13 @@ async def repeat(ctx):
     status = "включен 🔁" if ctx.bot.state.isRepeat else "выключен ❌"
     await ctx.send(f"🔁 Автоповтор {status}")
 
+@commands.command()
+async def repeatP(ctx):
+    """Включение/выключение автоповтора плейлиста"""
+
+    ctx.bot.state.isRepeatPlaylist = not ctx.bot.state.isRepeatPlaylist
+    status = "включен 🔁" if ctx.bot.state.isRepeatPlaylist else "выключен ❌"
+    await ctx.send(f"🔁 Автоповтор плейлиста {status}")
 
 @commands.command()
 async def pause(ctx):

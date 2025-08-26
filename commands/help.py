@@ -27,6 +27,7 @@ class HelpMenu(View):
         embed.add_field(name="!playlist", value="Текущая очередь", inline=False)
         embed.add_field(name="!history", value="История треков", inline=False)
         embed.add_field(name="!repeat", value="Повтор трека", inline=False)
+        embed.add_field(name="!repeatP", value="Повтор плейлиста", inline=False)
         embed.add_field(name="!clear", value="Очистить очередь", inline=False)
         await interaction.response.edit_message(embed=embed, view=self)
 

@@ -57,6 +57,10 @@ async def play_next(ctx):
     
     # Загрузка следующего трека из очереди
     title, url = ctx.bot.state.popNextTrack()
+
+    if ctx.bot.state.isRepeatPlaylist and title is None and url is None:
+        ctx.bot.state.loopPlaylist()
+
     if title is None and url is None:
         await ctx.send("❌ Очередь пуста.")
         return

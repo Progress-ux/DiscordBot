@@ -9,6 +9,7 @@ class PlayerState:
         self.current_track = None
         self.should_play_next = True
         self.isRepeat = False
+        self.isRepeatPlaylist = False 
     
     def addTrack(self, title, url):
         self.track_queue.append((title, url))
@@ -22,6 +23,11 @@ class PlayerState:
             return self.current_track
         return (None, None)
     
+    def loopPlaylist(self):
+        for track in self.track_history:
+            title, url = track
+            self.track_queue.append((title, url))
+        self.track_history.clear()
 
     def getQueueList(self):
         return list(self.track_queue)

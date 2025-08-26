@@ -8,7 +8,7 @@ from player_state import PlayerState
 
 # Импорт команд
 from commands.music import play
-from commands.playback import skip, back, repeat, pause, resume, stop, clear
+from commands.playback import skip, back, repeat, repeatP, pause, resume, stop, clear
 from commands.playlist import playlist, history
 from commands.voice_controls import join, leave
 from commands.ping import ping
@@ -38,7 +38,7 @@ async def on_voice_state_update(member, before, after):
 
 # Регистрация команд
 command_list = [
-    play, skip, back, repeat, pause, resume, 
+    play, skip, back, repeat, repeatP, pause, resume, 
     stop, clear, playlist, history, join, 
     leave, help_command, ask, ping
 ]
