@@ -11,7 +11,7 @@ async def play(ctx, *, query: str):
 
     if not ctx.voice_client:
         await ctx.invoke(join)
-
+    
     try:
         # Обработка ссылки
         if is_url(query):

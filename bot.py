@@ -20,7 +20,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 # Инициализация бота
-bot = commands.Bot(command_prefix="/", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 bot.state = PlayerState()
 
 @bot.event

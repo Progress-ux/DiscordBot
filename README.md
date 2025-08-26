@@ -16,7 +16,7 @@
 ### 1. Установка зависимостей
 Убедитесь, что у вас установлен Python 3.9+ и pip. Затем установите нужные библиотеки:
 ```sh
-pip install discord.py yt-dlp asyncio dotenv requests
+pip install discord.py yt-dlp asyncio dotenv requests PyNaCl
 ```
 
 ### 2. Установка FFmpeg
