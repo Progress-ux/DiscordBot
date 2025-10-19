@@ -7,11 +7,10 @@ load_dotenv()
 YDL_OPTIONS = {
     'format': 'bestaudio/best',
     'extract_flat': True,
-    'quiet': False,
+    'quiet': True,
     'ignoreerrors': True, 
     'nocheckcertificate': True,
     'cachedir': False,
-    'source_address': '0.0.0.0',
     'extractor_args': {
         'youtube': {
             'player_client': ['android','web']
@@ -23,7 +22,7 @@ YDL_OPTIONS = {
 YDL_OPTIONS_FROM_TITLE = {
     'format': 'bestaudio/best',
     'extract_flat': True,
-    'quiet': False,
+    'quiet': True,
     'ignoreerrors': True, 
     'nocheckcertificate': True,
     'cachedir': False,
