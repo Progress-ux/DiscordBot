@@ -1,7 +1,7 @@
 import yt_dlp
 import asyncio
 import re
-from config import YDL_OPTIONS, YDL_OPTIONS_FROM_TITLE
+from config import YDL_OPTIONS, YDL_OPTIONS_FROM_TITLE, YDL_OPTIONS_FROM_PLAYLIST
 
 # Проверка ссылки и очистка
 def clean_url(url):
@@ -13,10 +13,18 @@ def clean_url(url):
 def is_url(string):
     return re.match(r'^https?://', string) is not None
 
+def extract_playlist_ids(url):
+    with yt_dlp.YoutubeDL(YDL_OPTIONS_FROM_PLAYLIST) as ydl:
+        info = ydl.extract_info(url, download=False)
+        if not info or 'entries' not in info:
+            return []
+        # Извлекаем ID всех видео
+        ids = ["https://youtu.be/" + entry['id'] for entry in info['entries'] if entry]
+        return ids
 
-# Нужен для обработки плейлистов
-async def extract_info(url):
-    return await asyncio.to_thread(lambda: yt_dlp.YoutubeDL(YDL_OPTIONS).extract_info(url, download=False, process=False))
+def extract_first(first_url):
+    with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
+        return ydl.extract_info(first_url, download=False)
 
 # Поиск видео по названию
 async def extract_info_search(query):
@@ -48,35 +56,30 @@ async def download_audio(url):
             return info.get('url')
     return await asyncio.to_thread(get_audio)
 
-# Асинхронная загрузка оставшихся треков плейлиста
-async def load_rest(info, ctx):
-    entries = list(info.get('entries', []))  
-    if len(entries) <= 1:
-        await ctx.send("🎶 Плейлист загружен: 0 треков.")
+# Асинхронная загрузка треков из плейлиста
+async def load_playlist(ctx, playlist_url):
+    ids = await asyncio.to_thread(lambda: extract_playlist_ids(playlist_url))
+    if not ids:
+        await ctx.send("❌ Не удалось загрузить плейлист или он пуст.")
         return
 
-    async def process_entry(entry):
-        if entry is None:
-            return
-        entry_url = entry.get('url')
-        if not entry_url:
-            return
+    await ctx.send(f"🎶 Найдено {len(ids)} треков в плейлисте. Загружаю...")
 
-        def extract():
-            with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
-                return ydl.extract_info(entry_url, download=False)
+    # Пропускаем первый трек, если он уже играет
+    for i, video_url in enumerate(ids[1:], start=2):
+        try:
+            def extract():
+                with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
+                    return ydl.extract_info(video_url, download=False)
+            info = await asyncio.to_thread(extract)
+            if info is None:
+                continue
+            track_url = info.get('url')
+            track_title = info.get('title', 'Неизвестный трек')
 
-        result = await asyncio.to_thread(extract)
-        if result is None:
-            return
-        track_url = result.get('url')
-        if not track_url:
-            return
+            if track_url:
+                ctx.bot.state.addTrack(track_title, track_url)
+        except Exception:
+            continue
 
-        track_title = entry.get('title', 'Неизвестный трек')
-        ctx.bot.state.addTrack(track_title, track_url)
-
-    # Пропускаем первый трек, который уже играет
-    tasks = [process_entry(e) for e in entries[1:]]
-    await asyncio.gather(*tasks)
-    await ctx.send(f"🎶 Плейлист загружен: {len(tasks)} треков.")
+    await ctx.send(f"✅ Плейлист загружен: {len(ids) - 1} треков добавлено.")

@@ -1,6 +1,6 @@
 from discord.ext import commands
 from commands.voice_controls import join
-from Utils.utils import clean_url, extract_info, extract_info_search, download_audio, load_rest, is_url
+from Utils.utils import clean_url, extract_info_search, download_audio, is_url, extract_playlist_ids, load_playlist, extract_first
 import asyncio
 from config import FFMPEG_OPTIONS
 import discord
@@ -16,26 +16,41 @@ async def play(ctx, *, query: str):
         # Обработка ссылки
         if is_url(query):
             cleanurl = clean_url(query)
-            info = await extract_info(cleanurl)
         else:
             info = await extract_info_search(query)
             cleanurl = info['url']
 
-        # Проверка на плейлист для более удобной загрузки в очередь
-        if 'entries' in info:
-            await ctx.send(f"🎵 Начинаю загрузку плейлиста!")
-            entries = list(info['entries'])
-            first_entry = entries[0]
-            first_url = first_entry.get('url')
-            first_audio_url = await download_audio(first_url)
-            first_title = first_entry.get('title', 'Неизвестный трек')
-            ctx.bot.state.addTrack(first_title, first_audio_url)
-            await ctx.send(f"🎵 Начинаю воспроизведение: {first_title}")
+        if 'playlist' in cleanurl:
+            await ctx.send("🎵 Начинаю загрузку плейлиста!")
+            playlist_urls = extract_playlist_ids(cleanurl)
 
+            if not playlist_urls:
+                await ctx.send("❌ Не удалось загрузить плейлист.")
+                return
+
+            first_url = playlist_urls[0]
+
+            # Получаем информацию о первом треке
+            first_info = await asyncio.to_thread(extract_first, first_url)
+
+            if not first_info:
+                await ctx.send("❌ Не удалось получить данные первого трека.")
+                return
+
+            first_title = first_info.get('title', 'Неизвестный трек')
+            first_audio_url = await download_audio(first_url)
+
+            ctx.bot.state.addTrack(first_title, first_audio_url)
+            await ctx.send(f"🎵 Добавлен первый трек из плейлиста: {first_title}")
+
+            # Если ничего не играет — запускаем воспроизведение
             if not ctx.voice_client.is_playing():
                 await play_next(ctx)
+
+            # Загружаем остальные треки асинхронно (в фоне)
+            asyncio.create_task(load_playlist(ctx, cleanurl))
                 
-            asyncio.create_task(load_rest(info, ctx))
+            
 
         # Загрузка одиночного трека в очередь
         else:

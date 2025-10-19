@@ -18,6 +18,16 @@ YDL_OPTIONS = {
         },
 }
 
+YDL_OPTIONS_FROM_PLAYLIST = {
+    'simulate': True,  # Не скачивать
+    'flat_playlist': True,  # Обработать как список
+    'extract_flat': True,  # Не извлекать вложенные плейлисты
+    'quiet': True,  
+    'ignoreerrors': True,  
+    'nocheckcertificate': True,
+    'cachedir': False,
+}
+
 # Настройка для поиска по названию видео
 YDL_OPTIONS_FROM_TITLE = {
     'format': 'bestaudio/best',
