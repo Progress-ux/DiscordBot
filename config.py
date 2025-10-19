@@ -7,22 +7,33 @@ load_dotenv()
 YDL_OPTIONS = {
     'format': 'bestaudio/best',
     'extract_flat': True,
-    'quiet': True,
+    'quiet': False,
     'ignoreerrors': True, 
     'nocheckcertificate': True,
-    'cachedir': False
+    'cachedir': False,
+    'source_address': '0.0.0.0',
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['android','web']
+            }
+        },
 }
 
 # Настройка для поиска по названию видео
 YDL_OPTIONS_FROM_TITLE = {
     'format': 'bestaudio/best',
     'extract_flat': True,
-    'quiet': True,
+    'quiet': False,
     'ignoreerrors': True, 
     'nocheckcertificate': True,
     'cachedir': False,
     'noplaylist': True, 
-    'default_search': 'ytsearch'
+    'default_search': 'ytsearch',
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['android','web']
+            }
+        },
 }
 
 FFMPEG_OPTIONS = {

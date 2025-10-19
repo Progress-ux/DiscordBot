@@ -28,7 +28,13 @@ git clone https://github.com/Progress-ux/DiscordBot.git
 cd DiscordBot
 ```
 
-### 4. Запуск бота
+### 4. Добавление токена
+В папке создайте файл .env и сохраните в нем токен бота
+```sh
+DISCORD_TOKEN="ВАШ_ТОКЕН"
+```
+
+### 5. Запуск бота
 ```sh
 python bot.py
 ```

@@ -23,16 +23,18 @@ async def play(ctx, *, query: str):
 
         # Проверка на плейлист для более удобной загрузки в очередь
         if 'entries' in info:
-            for entry in info['entries']:
-                track_title = entry.get('title', 'Неизвестный трек')
-                track_url = entry.get('url')
-                track_audio_url = await download_audio(track_url)
-                ctx.bot.state.addTrack(track_title, track_audio_url)
-                await ctx.send(f"🎵 Добавлен трек: {track_title}")
-                break
+            await ctx.send(f"🎵 Начинаю загрузку плейлиста!")
+            entries = list(info['entries'])
+            first_entry = entries[0]
+            first_url = first_entry.get('url')
+            first_audio_url = await download_audio(first_url)
+            first_title = first_entry.get('title', 'Неизвестный трек')
+            ctx.bot.state.addTrack(first_title, first_audio_url)
+            await ctx.send(f"🎵 Начинаю воспроизведение: {first_title}")
 
             if not ctx.voice_client.is_playing():
                 await play_next(ctx)
+                
             asyncio.create_task(load_rest(info, ctx))
 
         # Загрузка одиночного трека в очередь

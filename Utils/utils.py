@@ -2,17 +2,12 @@ import yt_dlp
 import asyncio
 import re
 from config import YDL_OPTIONS, YDL_OPTIONS_FROM_TITLE
-import concurrent.futures
 
-executor = concurrent.futures.ThreadPoolExecutor()
-
-# Позволяет правильно обрабатывать радиоссылки
+# Проверка ссылки и очистка
 def clean_url(url):
     if 'playlist' not in url and 'list=' in url:
-        cleaned_url = re.sub(r"(\?list=[^&]+)", "", url)
-        return cleaned_url
-    else:
-        return url
+        return re.sub(r"(\?list=[^&]+)", "", url)
+    return url
 
 # Проверка на ссылку 
 def is_url(string):
@@ -21,61 +16,67 @@ def is_url(string):
 
 # Нужен для обработки плейлистов
 async def extract_info(url):
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(executor, lambda: yt_dlp.YoutubeDL(YDL_OPTIONS).extract_info(url, download=False, process=False))
+    return await asyncio.to_thread(lambda: yt_dlp.YoutubeDL(YDL_OPTIONS).extract_info(url, download=False, process=False))
 
 # Поиск видео по названию
 async def extract_info_search(query):
-    # Выделение потока
-    loop = asyncio.get_running_loop()
-
     def search():
         with yt_dlp.YoutubeDL(YDL_OPTIONS_FROM_TITLE) as ydl:
             info = ydl.extract_info(f"ytsearch:{query}", download=False)
-            return info['entries'][0] 
-    return await loop.run_in_executor(executor, search)
+            return info['entries'][0]
+    return await asyncio.to_thread(search)
 
 # Получение ссылки на аудио 
 async def download_audio(url):
-    # Выделение потока
-    loop = asyncio.get_running_loop()
-
     def get_audio():
-        with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
+        with yt_dlp.YoutubeDL({
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'nocheckcertificate': True,
+            'ignoreerrors': True,
+            'cachedir': False
+        }) as ydl:
             info = ydl.extract_info(url, download=False)
-            return info['url']  
-    return await loop.run_in_executor(executor, get_audio)
+            if info is None:
+                return None
+            # Если это плейлист, берем первый элемент
+            if 'entries' in info:
+                for entry in info['entries']:
+                    if entry is not None and entry.get('url'):
+                        return entry['url']
+                return None
+            return info.get('url')
+    return await asyncio.to_thread(get_audio)
 
-# Загрузка аудио-ссылок в отдельном потоке
+# Асинхронная загрузка оставшихся треков плейлиста
 async def load_rest(info, ctx):
-    # Выделение потока
-    loop = asyncio.get_running_loop()
+    entries = list(info.get('entries', []))  
+    if len(entries) <= 1:
+        await ctx.send("🎶 Плейлист загружен: 0 треков.")
+        return
 
-    # Переменная для подсчета загруженных треков из плейлиста
-    i = 0
+    async def process_entry(entry):
+        if entry is None:
+            return
+        entry_url = entry.get('url')
+        if not entry_url:
+            return
 
-    # Получение ссылки на каждый трек из плейлиста без скачивания
-    def extract(entry_url):
-        with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
-            return ydl.extract_info(entry_url, download=False)
+        def extract():
+            with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
+                return ydl.extract_info(entry_url, download=False)
 
-    # Обработка каждой ссылки из плейлиста для загрузки аудиоссылок
-    for entry in info['entries']:
-        if entry is None or i == 0:
-            i += 1
-            continue
-        try:
-            entry_url = entry.get('url')
-            if not entry_url:
-                continue
+        result = await asyncio.to_thread(extract)
+        if result is None:
+            return
+        track_url = result.get('url')
+        if not track_url:
+            return
 
-            result = await loop.run_in_executor(executor, extract, entry_url)
-            track_title = entry.get('title', 'Неизвестный трек')
-            track_audio_url = result['url']
-            ctx.bot.state.addTrack(track_title, track_audio_url)
-            i += 1
-        except Exception as ex:
-            print(f"[ERROR] Пропущен трек из-за ошибки: {ex}")
+        track_title = entry.get('title', 'Неизвестный трек')
+        ctx.bot.state.addTrack(track_title, track_url)
 
-    await ctx.send(f"🎶 Плейлист загружен: {i} треков.")
-
+    # Пропускаем первый трек, который уже играет
+    tasks = [process_entry(e) for e in entries[1:]]
+    await asyncio.gather(*tasks)
+    await ctx.send(f"🎶 Плейлист загружен: {len(tasks)} треков.")
