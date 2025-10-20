@@ -1,6 +1,6 @@
 from discord.ext import commands
 from commands.voice_controls import join
-from Utils.utils import clean_url, extract_info_search, download_audio, is_url, extract_playlist_ids, load_playlist, extract_first
+from Utils.utils import clean_url, extract_info_search, download_audio, is_url, extract_playlist_ids, load_playlist, extract_info, add_track
 import asyncio
 from config import FFMPEG_OPTIONS
 import discord
@@ -29,37 +29,26 @@ async def play(ctx, *, query: str):
                 return
 
             first_url = playlist_urls[0]
+            track_title = await add_track(ctx, first_url)
+            
+            if not ctx.voice_client.is_playing():
+                await ctx.send(f"🎵 Добавлен первый трек из плейлиста: {track_title}")
 
-            # Получаем информацию о первом треке
-            first_info = await asyncio.to_thread(extract_first, first_url)
-
-            if not first_info:
-                await ctx.send("❌ Не удалось получить данные первого трека.")
-                return
-
-            first_title = first_info.get('title', 'Неизвестный трек')
-            first_audio_url = await download_audio(first_url)
-
-            ctx.bot.state.addTrack(first_title, first_audio_url)
-            await ctx.send(f"🎵 Добавлен первый трек из плейлиста: {first_title}")
-
-            # Если ничего не играет — запускаем воспроизведение
+            # Если ничего не играет запускаем воспроизведение
             if not ctx.voice_client.is_playing():
                 await play_next(ctx)
 
-            # Загружаем остальные треки асинхронно (в фоне)
-            asyncio.create_task(load_playlist(ctx, cleanurl))
-                
-            
+            # Загружаем остальные треки 
+            asyncio.create_task(load_playlist(ctx, playlist_urls))
 
         # Загрузка одиночного трека в очередь
         else:
-            track_title = info.get('title', 'Неизвестный трек')
-            track_audio_url = await download_audio(cleanurl)
-            ctx.bot.state.addTrack(track_title, track_audio_url)
+            track_title = await add_track(ctx, cleanurl)
             await ctx.send(f"🎵 Добавлен трек: {track_title}")
+
             if not ctx.voice_client.is_playing():
                 await play_next(ctx)
+
     except Exception as e:
         await ctx.send(f"❌ Ошибка загрузки: {e}")
 
